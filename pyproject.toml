@@ -1,0 +1,24 @@
+[project]
+name = "ragxplorer"
+version = "0.1.0"
+description = "Hands-on Retrieval-Augmented Generation (RAG) developer stack"
+authors = [{ name = "Your Name", email = "your.email@example.com" }]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "openai",
+    "chromadb",
+    "faiss-cpu",
+    "scikit-learn",
+    "numpy",
+    "requests",
+    "tqdm",
+    "jupyter"
+]
+
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]

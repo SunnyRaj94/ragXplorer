@@ -172,3 +172,31 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+.env
+.venv
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Chroma vector DB
+chroma_store/
+*chroma_store/
+
+# FAISS index
+*.index
+
+# VSCode
+.vscode/
+
+# OS-specific
+.DS_Store
+Thumbs.db

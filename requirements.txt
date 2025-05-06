@@ -1,0 +1,9 @@
+openai
+chromadb
+faiss-cpu
+scikit-learn
+numpy
+requests
+tqdm
+jupyter
+ragas  # If you plan to use advanced RAG evaluation
