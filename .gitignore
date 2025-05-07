@@ -189,7 +189,9 @@ __pycache__/
 
 # Chroma vector DB
 chroma_store/
-*chroma_store/
+*/chroma_store/
+
+*/local_qdrant/
 
 # FAISS index
 *.index
@@ -200,3 +202,4 @@ chroma_store/
 # OS-specific
 .DS_Store
 Thumbs.db
+data/*

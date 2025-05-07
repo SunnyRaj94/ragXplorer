@@ -1,6 +1,8 @@
 import faiss
 import numpy as np
 import chromadb
+from qdrant_client.models import PointStruct
+import uuid
 
 # import pickle
 from typing import List, Dict, Tuple, Optional, Any
@@ -160,18 +162,16 @@ def get_qdrant_collection_local():
         collection_name="rag_collection",
         vectors_config=VectorParams(size=384, distance=Distance.COSINE),
     )
-    return client.get_collection("rag_collection")
+    return client
 
 
 def add_to_qdrant_local(client, embeddings, texts):
-    import uuid
-
     points = [
-        {
-            "id": str(uuid.uuid4()),
-            "vector": emb,
-            "payload": {"text": text},
-        }
+        PointStruct(
+            id=str(uuid.uuid4()),
+            vector=emb,
+            payload={"text": text},
+        )
         for emb, text in zip(embeddings, texts)
     ]
     client.upload_points(collection_name="rag_collection", points=points)
@@ -180,7 +180,7 @@ def add_to_qdrant_local(client, embeddings, texts):
 def get_weaviate_collection_local():
     import weaviate
 
-    client = weaviate.Client("https://sandbox.weaviate.network")  # or your own instance
+    client = weaviate.Client()  # or your own instance
     return client
 
 

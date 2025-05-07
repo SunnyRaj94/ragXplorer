@@ -1,3 +1,5 @@
 ROOT_PATH: ''
 paths:
   chroma_store: '<ROOT_PATH>/data/chroma_store'
+  ingestion_folder: '<ROOT_PATH>/data/docs'
+  data_folder: '<ROOT_PATH>/data/'
