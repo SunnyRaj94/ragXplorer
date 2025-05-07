@@ -7,3 +7,6 @@ requests
 tqdm
 jupyter
 ragas  # If you plan to use advanced RAG evaluation
+qdrant-client
+weaviate-client
+

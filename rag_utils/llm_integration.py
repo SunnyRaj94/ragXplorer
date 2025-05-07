@@ -1,5 +1,3 @@
-# rag_utils/llm_integration.py
-
 from typing import List, Dict, Literal, Optional
 import requests
 import openai

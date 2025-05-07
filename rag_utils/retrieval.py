@@ -1,5 +1,3 @@
-# rag_utils/retrieval.py
-
 from typing import List, Dict, Tuple, Literal, Union
 
 # import numpy as np
@@ -57,3 +55,9 @@ def retrieve_documents(
         return retrieve_from_chroma(source, query, k)
     else:
         raise ValueError(f"Unknown method: {method}")
+
+
+def retrieve(query, collection, embed_fn, top_k=3):
+    emb = embed_fn([query])[0]
+    results = collection.query(query_embeddings=[emb], n_results=top_k)
+    return results

@@ -1,21 +1,24 @@
-# import os
+import os
 from pathlib import Path
 from typing import List, Dict
-import fitz  # PyMuPDF
+
+# import fitz  # PyMuPDF
 import requests
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader
 import docx2txt
 
 
-def load_text_file(file_path: str) -> str:
+def read_text_file(file_path: str) -> str:
     with open(file_path, "r", encoding="utf-8") as f:
         return f.read()
 
 
-def load_pdf_file(file_path: str) -> str:
-    doc = fitz.open(file_path)
-    return "\n".join([page.get_text() for page in doc])
+def read_pdf_file(file_path: str) -> str:
+    reader = PdfReader(file_path)
+    return "\n".join(
+        page.extract_text() for page in reader.pages if page.extract_text()
+    )
 
 
 def load_documents_from_folder(
@@ -26,9 +29,9 @@ def load_documents_from_folder(
     for ext in extensions:
         for file in Path(folder_path).rglob(f"*{ext}"):
             if ext == ".pdf":
-                content = load_pdf_file(str(file))
+                content = read_text_file(str(file))
             else:
-                content = load_text_file(str(file))
+                content = read_pdf_file(str(file))
             docs.append(
                 {"text": content, "metadata": {"source": str(file), "extension": ext}}
             )
@@ -106,3 +109,26 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list:
         chunks.append(text[start:end])
         start += chunk_size - overlap
     return chunks
+
+
+def ingest_documents(
+    folder_path: str, chunk_size: int = 300, overlap: int = 50
+) -> List[Dict]:
+    """
+    Ingests all .txt and .pdf files from a folder and returns list of chunks with metadata.
+    """
+    docs = []
+    for filename in os.listdir(folder_path):
+        if not filename.endswith((".txt", ".pdf")):
+            continue
+        file_path = os.path.join(folder_path, filename)
+        try:
+            content = extract_text(file_path)
+            chunks = chunk_text(content, chunk_size, overlap)
+            for i, chunk in enumerate(chunks):
+                docs.append(
+                    {"text": chunk, "metadata": {"source": filename, "chunk_id": i}}
+                )
+        except Exception as e:
+            print(f"❌ Failed to read {filename}: {e}")
+    return docs
