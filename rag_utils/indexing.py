@@ -3,9 +3,10 @@ import numpy as np
 import chromadb
 from qdrant_client.models import PointStruct
 import uuid
+from rag_utils.embeddings import get_embeddings
 
 # import pickle
-from typing import List, Dict, Tuple, Optional, Any
+from typing import List, Dict, Tuple, Optional, Any, Union
 
 
 # FAISS Functions
@@ -191,3 +192,90 @@ def add_to_weaviate_local(client, embeddings, texts):
             class_name="RAGText",
             vector=emb,
         )
+
+
+"""---- additinal methods to retrive ----"""
+
+
+def query_faiss(
+    faiss_index,
+    texts: List[str],
+    documents: List[str],
+    model_name: str = "all-MiniLM-L6-v2",
+) -> List[str]:
+    query_emb = get_embeddings(texts, model_name=model_name)
+    import numpy as np
+
+    # Convert to float32 numpy array
+    query_np = np.array(query_emb).astype("float32")
+    distances, indices = faiss_index.search(query_np, k=5)
+
+    return [documents[i] for i in indices[0]]
+
+
+def query_qdrant(
+    qdrant_client,
+    collection_name: str,
+    query_text: str,
+    model_name: str = "all-MiniLM-L6-v2",
+):
+
+    query_emb = get_embeddings([query_text], model_name=model_name)[0]
+
+    search_result = qdrant_client.search(
+        collection_name=collection_name,
+        query_vector=query_emb,
+        limit=5,
+        with_payload=True,
+    )
+    return [hit.payload for hit in search_result]
+
+
+def query_weaviate(
+    weaviate_client, query_text: str, model_name: str = "all-MiniLM-L6-v2"
+):
+    query_emb = get_embeddings([query_text], model_name=model_name)[0]
+
+    result = (
+        weaviate_client.collections.get("RAGText")
+        .query.near_vector(near_vector=query_emb, limit=5)
+        .fetch_objects()
+    )
+
+    return [obj.properties["text"] for obj in result.objects]
+
+
+def query_chroma_options(
+    collection,
+    query: Union[str, List[float]],
+    k: int = 5,
+    model_name: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
+    """
+    Query ChromaDB using a raw text query or an embedding vector.
+
+    Args:
+        collection: Chroma collection instance.
+        query: Either a query string or a precomputed embedding (List[float]).
+        k: Number of nearest neighbors to return.
+        model_name: If query is a string, name of the embedding model to use.
+        api_key: Optional OpenAI API key for 'openai' model.
+
+    Returns:
+        dict: ChromaDB query results.
+    """
+    if isinstance(query, list) and all(isinstance(x, (float, int)) for x in query):
+        query_embedding = query
+    elif isinstance(query, str):
+        if not model_name:
+            raise ValueError("`model_name` must be provided when query is a string.")
+        from rag_utils.indexing import get_embeddings  # Adjust if needed
+
+        query_embedding = get_embeddings(
+            [query], model_name=model_name, api_key=api_key
+        )[0]
+    else:
+        raise TypeError("Query must be either a string or an embedding list.")
+
+    return collection.query(query_embeddings=[query_embedding], n_results=k)
