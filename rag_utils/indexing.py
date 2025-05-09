@@ -154,13 +154,13 @@ def add_to_faiss_local(index, embeddings):
     return index
 
 
-def get_qdrant_collection_local():
+def get_qdrant_collection_local(local_dir_path, collection_name="rag_collection"):
     from qdrant_client import QdrantClient
     from qdrant_client.models import Distance, VectorParams
 
-    client = QdrantClient(path="./local_qdrant")
+    client = QdrantClient(path=local_dir_path)
     client.recreate_collection(
-        collection_name="rag_collection",
+        collection_name=collection_name,
         vectors_config=VectorParams(size=384, distance=Distance.COSINE),
     )
     return client
