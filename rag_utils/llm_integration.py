@@ -1,6 +1,7 @@
 from typing import List, Dict, Literal, Optional
 import requests
 import openai
+from rag_utils.indexing import query_chroma
 
 
 def query_openai(
@@ -69,3 +70,100 @@ def query_llm(
         return query_ollama(messages, model=model)
     else:
         raise ValueError(f"Unsupported provider: {provider}")
+
+
+def format_context(results: Dict) -> str:
+    """Extract documents and format them into a prompt-ready context string."""
+    docs = results.get("documents", [[]])[0]  # top-k documents
+    return "\n\n".join(docs)
+
+
+def ask_openai(
+    query: str,
+    retriever,
+    model: str = "gpt-3.5-turbo",
+    api_key: Optional[str] = None,
+) -> str:
+    results = query_chroma(retriever, query)
+    context = format_context(results)
+    return query_llm(
+        query, context=context, provider="openai", model=model, api_key=api_key
+    )
+
+
+def ask_ollama(
+    query: str,
+    retriever,
+    model: str = "mistral",
+) -> str:
+    results = query_chroma(retriever, query)
+    context = format_context(results)
+    return query_llm(query, context=context, provider="ollama", model=model)
+
+
+def ask_groq(
+    query: str,
+    retriever,
+    model: str = "llama3-8b-8192",
+    api_key: Optional[str] = None,
+) -> str:
+    results = query_chroma(retriever, query)
+    context = format_context(results)
+
+    # POST to Groq chat endpoint
+    import requests
+
+    try:
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": context},
+                {"role": "user", "content": query},
+            ],
+        }
+        headers = {"Authorization": f"Bearer {api_key}"}
+        res = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            json=payload,
+            headers=headers,
+        )
+        res.raise_for_status()
+        return res.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"[Groq Error] {e}")
+        return ""
+
+
+def ask_together(
+    query: str,
+    retriever,
+    model: str = "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    api_key: Optional[str] = None,
+) -> str:
+    results = query_chroma(retriever, query)
+    context = format_context(results)
+
+    import requests
+
+    try:
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": context},
+                {"role": "user", "content": query},
+            ],
+        }
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        res = requests.post(
+            "https://api.together.xyz/v1/chat/completions",
+            json=payload,
+            headers=headers,
+        )
+        res.raise_for_status()
+        return res.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"[TogetherAI Error] {e}")
+        return ""
